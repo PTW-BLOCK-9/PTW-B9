@@ -1248,6 +1248,7 @@ function lgK(){
   if(u===_KU&&p===_KP){
     sess={role:'k'};
     localStorage.setItem('ptw_auto_sess',JSON.stringify({role:'k'}));
+    localStorage.setItem('ptw_auto_sess',JSON.stringify({role:'k'}));
     auditLog('LOGIN','KEBL viewer login');
     enterK();
   }else{
@@ -1260,6 +1261,7 @@ function lgC(){
   if(!ph||pin.length!==6){SE('eC','أدخل رقم الهاتف والرمز السري');return;}
   if(ph===_CP.replace(/\D/g,'')&&pin===_CK){
     sess={role:'c'};
+    localStorage.setItem('ptw_auto_sess',JSON.stringify({role:'c'}));
     localStorage.setItem('ptw_auto_sess',JSON.stringify({role:'c'}));
     auditLog('LOGIN','Coordinator login');
     enterC();
@@ -3658,7 +3660,7 @@ async function enterC(){
   renderC();updNBadge();
   // Fetch fresh from Firebase
   SL(true,'LOADING DATA...');
-  try{await Promise.all([loadPermits(),loadPending(),loadExcelData(),loadMapImage()]);}catch(e){}
+  try{await Promise.all([loadPermits(),loadPending(),loadUsers(),loadExcelData(),loadMapImage()]);}catch(e){}
   SL(false);
   cleanOldPermits();renderC();updNBadge();
   initFirebaseSDK();
@@ -4495,6 +4497,27 @@ window.addEventListener('load', function(){
 </script>
 <script>
 // ── AUTO LOGIN — يفتح مباشرة بدون تسجيل دخول ────────
+window.addEventListener('load', function(){
+  try{
+    var s = JSON.parse(localStorage.getItem('ptw_auto_sess') || 'null');
+    if(!s) return;
+    var tries = 0;
+    var iv = setInterval(function(){
+      tries++;
+      if(tries > 80){ clearInterval(iv); return; }
+      if(typeof enterC === 'undefined') return;
+      clearInterval(iv);
+      sess = s;
+      if(s.role==='c') enterC();
+      else if(s.role==='k') enterK();
+      else if(s.role==='p') enterP();
+    }, 100);
+  } catch(e){
+    localStorage.removeItem('ptw_auto_sess');
+  }
+});
+</script>
+<script>
 window.addEventListener('load', function(){
   try{
     var s = JSON.parse(localStorage.getItem('ptw_auto_sess') || 'null');
