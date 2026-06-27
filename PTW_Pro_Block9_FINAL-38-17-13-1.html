@@ -2777,8 +2777,8 @@ function exportMap4K(){
 
     // ===== LEFT TABLE: Total PTW Active — exact match to screen =====
     const LT_PAD=Math.round(LEFT_W*0.018);
-    const FS_LT=Math.round(TOTAL_H*0.0062);    // row text
-    const FS_LTHDR=Math.round(TOTAL_H*0.0055); // header text
+    const FS_LT=Math.round(TOTAL_H*0.0095);    // row text +60%
+    const FS_LTHDR=Math.round(TOTAL_H*0.0085); // header text +60%
 
     // ── PTW logo + title area (green gradient top) ──
     const logoH=Math.round(BODY_H*0.058);
@@ -2813,7 +2813,7 @@ function exportMap4K(){
     ctx.fillStyle='#a5d6a7';
     ctx.fillRect(0,titleY,LEFT_W,1);
     ctx.fillRect(0,titleY+titleH-1,LEFT_W,1);
-    ctx.font=`900 ${Math.round(FS_LT*1.15)}px Arial, sans-serif`;
+    ctx.font=`900 ${Math.round(FS_LT*1.50)}px Arial, sans-serif`;
     ctx.fillStyle='#1b5e20';
     ctx.textAlign='center';
     ctx.fillText('Total PTW Active',LEFT_W/2,titleY+Math.round(titleH*0.70));
@@ -3079,8 +3079,8 @@ function exportMap4K(){
     // ===== RIGHT TABLE: Permit Details =====
     const RT_X=LEFT_W+MAP_W;
     const RT_PAD=Math.round(RIGHT_W*0.012);
-    const FS_RT=Math.round(TOTAL_H*0.006);
-    const FS_RTHDR=Math.round(TOTAL_H*0.0058);
+    const FS_RT=Math.round(TOTAL_H*0.0095);
+    const FS_RTHDR=Math.round(TOTAL_H*0.0090);
 
     // Column widths (right table)
     const RT_PERM_W=Math.round(RIGHT_W*0.135);
@@ -3110,12 +3110,23 @@ function exportMap4K(){
     ctx.fillStyle='#c8a000';
     ctx.fillRect(RT_X,BODY_Y+RT_HDR_H,RIGHT_W,2);
 
-    // Permit rows
+    // Permit rows — dynamic height to show ALL permits, 2-line description
     const avail_rows_RT=BODY_H-RT_HDR_H-2;
-    const RT_ROW_H=Math.round(avail_rows_RT/Math.max(enriched.length,1));
-    const RT_ROW_H_CAP=Math.min(RT_ROW_H,Math.round(TOTAL_H*0.028));
+    const RT_ROW_H_CAP=Math.max(Math.round(avail_rows_RT/Math.max(enriched.length,1)), Math.round(TOTAL_H*0.028));
     // Sort by company then permit number
     const sorted=[...enriched].sort((a,b)=>a._co.localeCompare(b._co)||a.num.localeCompare(b.num));
+
+    // helper: split text into 2 lines that fit maxW
+    function wrapText2(text,maxW){
+      const words=text.split(' ');
+      let line1='',line2='';
+      for(let w of words){
+        const test=line1?line1+' '+w:w;
+        if(ctx.measureText(test).width<=maxW){line1=test;}
+        else{line2=line2?line2+' '+w:w;}
+      }
+      return [line1,line2];
+    }
 
     let rr=BODY_Y+RT_HDR_H+2;
     sorted.forEach((p,i)=>{
@@ -3131,20 +3142,31 @@ function exportMap4K(){
       ctx.fillStyle='#d0d8e8';
       ctx.fillRect(RT_X,rr+RT_ROW_H_CAP-1,RIGHT_W,1);
 
-      const ry2=rr+Math.round(RT_ROW_H_CAP*0.66);
+      const lineH=Math.round(FS_RT*1.35);
+      const hasDesc2=RT_ROW_H_CAP>Math.round(TOTAL_H*0.032);
+      const ry1=hasDesc2?rr+Math.round(RT_ROW_H_CAP*0.35):rr+Math.round(RT_ROW_H_CAP*0.66);
+      const ry2=ry1+lineH;
+
       ctx.font=`700 ${FS_RT}px 'Courier New', monospace`;
       ctx.fillStyle='#1a2535';
-      ctx.fillText(fitText(p.num,RT_PERM_W-RT_PAD*2),rx0,ry2);
+      ctx.fillText(fitText(p.num,RT_PERM_W-RT_PAD*2),rx0,ry1);
 
       ctx.font=`400 ${FS_RT}px Arial, sans-serif`;
       ctx.fillStyle='#334466';
-      ctx.fillText(fitText(p._area,RT_LOC_W-RT_PAD),rx1+RT_PAD,ry2);
+      ctx.fillText(fitText(p._area,RT_LOC_W-RT_PAD),rx1+RT_PAD,ry1);
 
       ctx.fillStyle='#223355';
-      ctx.fillText(fitText(p._co,RT_CO_W-RT_PAD),rx2+RT_PAD,ry2);
+      ctx.fillText(fitText(p._co,RT_CO_W-RT_PAD),rx2+RT_PAD,ry1);
 
+      // Description — 2 lines if space available
       ctx.fillStyle='#2a2a2a';
-      ctx.fillText(fitText(p._desc,RT_DESC_W-RT_PAD*2),rx4+RT_PAD,ry2);
+      if(hasDesc2){
+        const [d1,d2]=wrapText2(p._desc,RT_DESC_W-RT_PAD*2);
+        ctx.fillText(d1,rx4+RT_PAD,ry1);
+        if(d2)ctx.fillText(fitText(d2,RT_DESC_W-RT_PAD*2),rx4+RT_PAD,ry2);
+      } else {
+        ctx.fillText(fitText(p._desc,RT_DESC_W-RT_PAD*2),rx4+RT_PAD,ry1);
+      }
 
       rr+=RT_ROW_H_CAP;
     });
@@ -3337,8 +3359,8 @@ function exportMapPhoto(){
 
     // ── LEFT TABLE (same logic as 4K but wider) ──
     const LT_PAD=Math.round(LEFT_W*0.018);
-    const FS_LT=Math.round(TOTAL_H*0.007);
-    const FS_LTHDR=Math.round(TOTAL_H*0.006);
+    const FS_LT=Math.round(TOTAL_H*0.0105);
+    const FS_LTHDR=Math.round(TOTAL_H*0.0095);
     // PTW logo bar
     const logoH=Math.round(BODY_H*0.06);
     const lGrd=ctx.createLinearGradient(0,BODY_Y,LEFT_W,BODY_Y+logoH);
@@ -3349,7 +3371,7 @@ function exportMapPhoto(){
     const titleH=Math.round(BODY_H*0.034);const titleY=BODY_Y+logoH;
     ctx.fillStyle='#e8f5e9';ctx.fillRect(0,titleY,LEFT_W,titleH);
     ctx.fillStyle='#a5d6a7';ctx.fillRect(0,titleY,LEFT_W,1);ctx.fillRect(0,titleY+titleH-1,LEFT_W,1);
-    ctx.font=`900 ${Math.round(FS_LT*1.2)}px Arial`;ctx.fillStyle='#1b5e20';ctx.textAlign='center';
+    ctx.font=`900 ${Math.round(FS_LT*1.56)}px Arial`;ctx.fillStyle='#1b5e20';ctx.textAlign='center';
     ctx.fillText('Total PTW Active',LEFT_W/2,titleY+Math.round(titleH*0.70));ctx.textAlign='left';
     // Column headers
     const LT_UNIT_W=Math.round(LEFT_W*0.175),LT_NAME_W=Math.round(LEFT_W*0.415);
